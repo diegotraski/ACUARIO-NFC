@@ -73,6 +73,8 @@ button { color: inherit; }
 .section-heading div { display: flex; flex-direction: column; gap: 3px; }
 .section-heading h2 { margin: 0; font-size: 23px; letter-spacing: -.045em; }
 .section-heading small { color: #879696; font-size: 11px; }
+.delete-history { padding: 7px 9px; border: 1px solid #efc9c2; border-radius: 10px; background: #fff3f0; color: #a84635; font-size: 10px; font-weight: 800; cursor: pointer; }
+.delete-history:disabled { opacity: .6; cursor: wait; }
 .action-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .action-card { position: relative; min-height: 147px; padding: 15px; display: flex; flex-direction: column; align-items: flex-start; text-align: left; overflow: hidden; border: 1px solid var(--line); border-radius: 22px; background: var(--card); cursor: pointer; transition: transform .18s ease, box-shadow .18s ease; }
 .action-card:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(24,60,59,.08); }

@@ -93,3 +93,33 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const tank = new URL(request.url).searchParams.get("tank");
+    if (!validTank(tank)) {
+      return Response.json({ error: "Identificador de acuario no válido" }, { status: 400 });
+    }
+
+    const { url, key } = configuration();
+    const endpoint = new URL(`${url}/rest/v1/aquarium_events`);
+    endpoint.searchParams.set("tank_id", `eq.${tank}`);
+
+    const response = await fetch(endpoint, {
+      method: "DELETE",
+      headers: headers(key, "return=minimal"),
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      const data = (await response.json()) as { message?: string };
+      throw new Error(data.message || "No se pudo borrar el historial");
+    }
+
+    return Response.json({ success: true });
+  } catch (error) {
+    return Response.json(
+      { error: error instanceof Error ? error.message : "No se pudo borrar el historial" },
+      { status: 500 },
+    );
+  }
+}

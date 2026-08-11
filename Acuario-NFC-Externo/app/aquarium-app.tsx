@@ -81,6 +81,8 @@ const actionMap = Object.fromEntries(
   actions.map((action) => [action.key, action]),
 ) as Record<ActionKey, ActionDefinition>;
 
+const automaticActionKeys: ActionKey[] = ["feed", "water", "fertilizer", "filter1", "filter2"];
+
 const DAY = 24 * 60 * 60 * 1000;
 
 function isAction(value: string | null): value is ActionKey {
@@ -141,7 +143,7 @@ function latest(events: AquariumEvent[], action: ActionKey) {
 
 function historyDetail(event: AquariumEvent) {
   const d = event.details;
-  if (event.action === "water") return `${d.percentage ?? 30}% renovado`;
+  if (event.action === "water") return d.percentage ? `${d.percentage}% renovado` : "Cambio de agua registrado";
   if (event.action === "parameters") {
     const values = [
       d.temperature && `${d.temperature} °C`,
@@ -165,6 +167,7 @@ export default function AquariumApp() {
   const [showSetup, setShowSetup] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
   const [now, setNow] = useState(0);
@@ -281,13 +284,30 @@ export default function AquariumApp() {
     window.setTimeout(() => setCopied(""), 1400);
   }
 
-  async function copyFeedAutomation() {
+  async function copyAutomation(action: ActionKey) {
     const url = new URL("/api/scan", window.location.origin);
     url.searchParams.set("tank", tankId);
-    url.searchParams.set("action", "feed");
+    url.searchParams.set("action", action);
     await navigator.clipboard.writeText(url.toString());
-    setCopied("feed-auto");
+    setCopied(`${action}-auto`);
     window.setTimeout(() => setCopied(""), 1400);
+  }
+
+  async function clearHistory() {
+    if (!window.confirm("¿Borrar todo el historial del acuario? Esta acción no se puede deshacer.")) return;
+    setDeleting(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/events?tank=${encodeURIComponent(tankId)}`, { method: "DELETE" });
+      const data = (await response.json()) as { success?: boolean; error?: string };
+      if (!response.ok || !data.success) throw new Error(data.error || "No se pudo borrar el historial");
+      setEvents([]);
+      setNow(Date.now());
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "No se pudo borrar el historial");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -363,7 +383,7 @@ export default function AquariumApp() {
       <section className="section-block history-block">
         <div className="section-heading">
           <div><span>ACTIVIDAD</span><h2>Historial reciente</h2></div>
-          {loading && <small>Actualizando…</small>}
+          {loading ? <small>Actualizando…</small> : events.length > 0 ? <button className="delete-history" type="button" disabled={deleting} onClick={clearHistory}>{deleting ? "Borrando…" : "Borrar historial"}</button> : null}
         </div>
         <div className="history-list">
           {!loading && events.length === 0 && (
@@ -397,15 +417,18 @@ export default function AquariumApp() {
             <button className="close-button" type="button" onClick={() => setShowSetup(false)} aria-label="Cerrar">×</button>
             <span className="sheet-kicker">CONFIGURACIÓN NFC</span>
             <h2 id="setup-title">Enlaces para tus etiquetas</h2>
-            <p className="sheet-intro">La alimentación automática se usa en Atajos o MacroDroid. Los demás enlaces abren el formulario correspondiente.</p>
+            <p className="sheet-intro">Copia cada automatización en Atajos o MacroDroid. Al escanear, se guarda directamente y el móvil muestra el resultado sin abrir la web.</p>
             <div className="link-list">
-              <button className="auto-link" type="button" onClick={copyFeedAutomation}><span><b>Alimentar automáticamente</b><small>Petición POST · sin abrir la web</small></span><em>{copied === "feed-auto" ? "Copiado" : "Copiar"}</em></button>
               <button type="button" onClick={() => copyLink()}><span><b>Panel general</b><small>Resumen e historial</small></span><em>{copied === "dashboard" ? "Copiado" : "Copiar"}</em></button>
-              {actions.map((action) => (
-                <button type="button" key={action.key} onClick={() => copyLink(action.key)}>
-                  <span><b>{action.shortLabel}</b><small>Apertura directa</small></span><em>{copied === action.key ? "Copiado" : "Copiar"}</em>
+              {automaticActionKeys.map((actionKey) => {
+                const action = actionMap[actionKey];
+                return (
+                <button className="auto-link" type="button" key={action.key} onClick={() => copyAutomation(action.key)}>
+                  <span><b>{action.shortLabel}</b><small>Automático · sin abrir la web</small></span><em>{copied === `${action.key}-auto` ? "Copiado" : "Copiar"}</em>
                 </button>
-              ))}
+                );
+              })}
+              <button type="button" onClick={() => copyLink("parameters")}><span><b>Parámetros</b><small>Abre el formulario para introducir valores</small></span><em>{copied === "parameters" ? "Copiado" : "Copiar"}</em></button>
             </div>
           </section>
         </div>

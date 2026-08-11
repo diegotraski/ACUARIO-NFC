@@ -21,16 +21,20 @@ parámetros, fertilización y mantenimiento de dos filtros mediante etiquetas NF
 
 ## Alimentación NFC automática
 
-El menú **NFC** incluye `Alimentar automáticamente`. Ese enlace apunta al
-endpoint `POST /api/scan` y está pensado para una automatización NFC de Atajos
-en iPhone o MacroDroid en Android. La petición:
+El menú **NFC** incluye automatizaciones para alimentación, cambio de agua,
+fertilización y los dos filtros. Esos enlaces apuntan al endpoint
+`POST /api/scan` y están pensados para automatizaciones NFC de Atajos en iPhone
+o MacroDroid en Android. Las peticiones:
 
 - registra la primera alimentación del día sin abrir la web;
 - responde con un mensaje breve para la notificación del teléfono;
 - impide una segunda alimentación durante el mismo día natural en
   `Europe/Madrid`.
+- registran directamente el resto de cuidados y devuelven un texto breve para
+  mostrarlo como notificación.
 
-Los enlaces NFC normales se mantienen para abrir manualmente los formularios.
+Los parámetros siguen abriendo un formulario porque requieren introducir sus
+valores. El panel también permite borrar todo el historial con confirmación.
 
 La clave `SUPABASE_SERVICE_ROLE_KEY` es secreta: solo debe guardarse como
 variable de entorno en Vercel y nunca escribirse dentro del código ni enviarse
