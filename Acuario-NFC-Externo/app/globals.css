@@ -132,6 +132,8 @@ input:focus, textarea:focus { border-color: #4bcdbb; box-shadow: 0 0 0 3px rgba(
 .link-list { display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--line); border-radius: 17px; }
 .link-list button { display: flex; align-items: center; justify-content: space-between; padding: 12px 13px; border: 0; border-bottom: 1px solid #e9efed; background: white; text-align: left; cursor: pointer; }
 .link-list button:last-child { border-bottom: 0; }
+.link-list .auto-link { background: #eefbdd; }
+.link-list .auto-link b { color: #3f7c2e; }
 .link-list span { display: flex; flex-direction: column; gap: 3px; }
 .link-list b { font-size: 12px; }
 .link-list small { color: var(--muted); font-size: 9.5px; }

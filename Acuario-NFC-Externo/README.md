@@ -19,6 +19,19 @@ parámetros, fertilización y mantenimiento de dos filtros mediante etiquetas NF
 5. Añade las variables `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` en Vercel.
 6. Abre la URL desplegada, pulsa **NFC** y copia los siete enlaces.
 
+## Alimentación NFC automática
+
+El menú **NFC** incluye `Alimentar automáticamente`. Ese enlace apunta al
+endpoint `POST /api/scan` y está pensado para una automatización NFC de Atajos
+en iPhone o MacroDroid en Android. La petición:
+
+- registra la primera alimentación del día sin abrir la web;
+- responde con un mensaje breve para la notificación del teléfono;
+- impide una segunda alimentación durante el mismo día natural en
+  `Europe/Madrid`.
+
+Los enlaces NFC normales se mantienen para abrir manualmente los formularios.
+
 La clave `SUPABASE_SERVICE_ROLE_KEY` es secreta: solo debe guardarse como
 variable de entorno en Vercel y nunca escribirse dentro del código ni enviarse
 por chat.

@@ -1,32 +1,14 @@
-const validActions = new Set(["feed", "water", "parameters", "filter1", "filter2", "fertilizer"]);
-const tankPattern = /^[a-zA-Z0-9-]{20,64}$/;
-
-type DatabaseRow = {
-  id: number;
-  action: string;
-  details: Record<string, unknown>;
-  created_at: number;
-};
-
-function validTank(tank: string | null): tank is string {
-  return Boolean(tank && tankPattern.test(tank));
-}
-
-function configuration() {
-  const url = process.env.SUPABASE_URL?.replace(/\/$/, "");
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error("Falta conectar la base de datos Supabase.");
-  return { url, key };
-}
-
-function headers(key: string, prefer?: string) {
-  return {
-    apikey: key,
-    Authorization: `Bearer ${key}`,
-    "Content-Type": "application/json",
-    ...(prefer ? { Prefer: prefer } : {}),
-  };
-}
+import {
+  configuration,
+  DatabaseRow,
+  headers,
+  insertEvent,
+  latestFeedTimestamp,
+  madridDay,
+  madridTime,
+  validActions,
+  validTank,
+} from "../_lib/aquarium";
 
 export async function GET(request: Request) {
   try {
@@ -71,10 +53,12 @@ export async function POST(request: Request) {
       action?: string;
       details?: Record<string, unknown>;
     };
-    if (!validTank(payload.tank || null)) {
+    const tank = payload.tank || null;
+    const action = payload.action;
+    if (!validTank(tank)) {
       return Response.json({ error: "Identificador de acuario no válido" }, { status: 400 });
     }
-    if (!payload.action || !validActions.has(payload.action)) {
+    if (!action || !validActions.has(action)) {
       return Response.json({ error: "Acción no válida" }, { status: 400 });
     }
 
@@ -85,24 +69,21 @@ export async function POST(request: Request) {
 
     const { url, key } = configuration();
     const createdAt = Date.now();
-    const response = await fetch(`${url}/rest/v1/aquarium_events?select=id`, {
-      method: "POST",
-      headers: headers(key, "return=representation"),
-      body: JSON.stringify({
-        tank_id: payload.tank,
-        action: payload.action,
-        details,
-        created_at: createdAt,
-      }),
-      cache: "no-store",
-    });
-    const rows = (await response.json()) as Array<{ id: number }> | { message?: string };
-    if (!response.ok || !Array.isArray(rows)) {
-      throw new Error(!Array.isArray(rows) && rows.message ? rows.message : "No se pudo guardar el registro");
+
+    if (action === "feed") {
+      const lastFeed = await latestFeedTimestamp(tank, url, key);
+      if (lastFeed && madridDay(lastFeed) === madridDay(createdAt)) {
+        return Response.json(
+          { error: `Los peces ya fueron alimentados hoy a las ${madridTime(lastFeed)}.` },
+          { status: 409 },
+        );
+      }
     }
 
+    const id = await insertEvent(tank, action, details, createdAt, url, key);
+
     return Response.json(
-      { event: { id: rows[0]?.id ?? createdAt, action: payload.action, details, createdAt } },
+      { event: { id, action, details, createdAt } },
       { status: 201 },
     );
   } catch (error) {

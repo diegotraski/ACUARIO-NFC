@@ -115,6 +115,15 @@ function formatDate(timestamp: number) {
   }).format(new Date(timestamp));
 }
 
+function madridDay(timestamp: number) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Madrid",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(timestamp));
+}
+
 function dueLabel(timestamp: number | undefined, intervalDays: number, now: number) {
   if (!timestamp) return { label: "Pendiente", status: "due" };
   if (!now) return { label: "Calculando", status: "ok" };
@@ -204,10 +213,11 @@ export default function AquariumApp() {
   const waterDue = dueLabel(lastWater?.createdAt, 7, now);
   const filter1Due = dueLabel(lastFilter1?.createdAt, 30, now);
   const filter2Due = dueLabel(lastFilter2?.createdAt, 30, now);
+  const fedToday = Boolean(lastFeed && now && madridDay(lastFeed.createdAt) === madridDay(now));
 
   let warning = "";
-  if (activeAction === "feed" && lastFeed && now - lastFeed.createdAt < 4 * 60 * 60 * 1000) {
-    warning = `Ya registraste una alimentación ${timeAgo(lastFeed.createdAt, now).toLowerCase()}.`;
+  if (activeAction === "feed" && lastFeed && fedToday) {
+    warning = `Los peces ya fueron alimentados hoy a las ${new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit" }).format(new Date(lastFeed.createdAt))}.`;
   } else if (activeAction === "filter1" && lastFilter2 && now - lastFilter2.createdAt < 7 * DAY) {
     warning = "El filtro 2 se limpió hace menos de 7 días. Conviene espaciar ambas limpiezas.";
   } else if (activeAction === "filter2" && lastFilter1 && now - lastFilter1.createdAt < 7 * DAY) {
@@ -271,6 +281,15 @@ export default function AquariumApp() {
     window.setTimeout(() => setCopied(""), 1400);
   }
 
+  async function copyFeedAutomation() {
+    const url = new URL("/api/scan", window.location.origin);
+    url.searchParams.set("tank", tankId);
+    url.searchParams.set("action", "feed");
+    await navigator.clipboard.writeText(url.toString());
+    setCopied("feed-auto");
+    window.setTimeout(() => setCopied(""), 1400);
+  }
+
   return (
     <main className="app-shell">
       <header className="topbar">
@@ -290,7 +309,7 @@ export default function AquariumApp() {
         <div className="hero-copy">
           <span className="status-dot" />
           <p>Estado de hoy</p>
-          <h1>{lastFeed ? "Todo bajo control" : "Empieza el registro"}</h1>
+          <h1>{fedToday ? "Todo bajo control" : "Pendiente de alimentar"}</h1>
           <span>{lastFeed ? `Última alimentación ${timeAgo(lastFeed.createdAt, now).toLowerCase()}` : "Registra la primera alimentación para comenzar."}</span>
         </div>
         <div className="water-orbit" aria-hidden="true">
@@ -369,7 +388,7 @@ export default function AquariumApp() {
       </footer>
 
       {activeAction && (
-        <ActionSheet action={actionMap[activeAction]} warning={warning} saving={saving} error={error} onClose={closeAction} onSubmit={submitAction} />
+        <ActionSheet action={actionMap[activeAction]} warning={warning} blocked={activeAction === "feed" && fedToday} saving={saving} error={error} onClose={closeAction} onSubmit={submitAction} />
       )}
 
       {showSetup && (
@@ -378,8 +397,9 @@ export default function AquariumApp() {
             <button className="close-button" type="button" onClick={() => setShowSetup(false)} aria-label="Cerrar">×</button>
             <span className="sheet-kicker">CONFIGURACIÓN NFC</span>
             <h2 id="setup-title">Enlaces para tus etiquetas</h2>
-            <p className="sheet-intro">Copia cada enlace y grábalo en su NFC. Todos guardarán los datos en este mismo acuario.</p>
+            <p className="sheet-intro">La alimentación automática se usa en Atajos o MacroDroid. Los demás enlaces abren el formulario correspondiente.</p>
             <div className="link-list">
+              <button className="auto-link" type="button" onClick={copyFeedAutomation}><span><b>Alimentar automáticamente</b><small>Petición POST · sin abrir la web</small></span><em>{copied === "feed-auto" ? "Copiado" : "Copiar"}</em></button>
               <button type="button" onClick={() => copyLink()}><span><b>Panel general</b><small>Resumen e historial</small></span><em>{copied === "dashboard" ? "Copiado" : "Copiar"}</em></button>
               {actions.map((action) => (
                 <button type="button" key={action.key} onClick={() => copyLink(action.key)}>
@@ -404,9 +424,10 @@ function MaintenanceRow({ title, subtitle, due, tone }: { title: string; subtitl
   );
 }
 
-function ActionSheet({ action, warning, saving, error, onClose, onSubmit }: {
+function ActionSheet({ action, warning, blocked, saving, error, onClose, onSubmit }: {
   action: ActionDefinition;
   warning: string;
+  blocked: boolean;
   saving: boolean;
   error: string;
   onClose: () => void;
@@ -443,7 +464,7 @@ function ActionSheet({ action, warning, saving, error, onClose, onSubmit }: {
             </div>
           )}
           <label>Nota opcional<textarea name="note" placeholder="Añade cualquier detalle…" rows={2} /></label>
-          <button className="primary-button" disabled={saving} type="submit">{saving ? "Guardando…" : warning ? "Registrar de todas formas" : "Confirmar registro"}</button>
+          <button className="primary-button" disabled={saving || blocked} type="submit">{saving ? "Guardando…" : blocked ? "Ya alimentados hoy" : "Confirmar registro"}</button>
         </form>
       </section>
     </div>
