@@ -16,6 +16,15 @@ Toca una etiqueta NFC junto al acuario y el cuidado queda registrado al momento,
 
 </div>
 
+<details>
+<summary>🇬🇧 <b>English summary</b></summary>
+
+<br>
+
+**Acuario NFC** is a web app to log aquarium care (feeding, water changes, fertilizing, filter maintenance and water parameters) by tapping NFC tags with your phone. Taps trigger iOS Shortcuts / Android MacroDroid automations that call a server endpoint, so the event is recorded without opening the app, and duplicate feedings on the same day are blocked. Built with Next.js 16, React 19, TypeScript and Supabase (PostgreSQL with Row Level Security), installable as a PWA and deployed on Vercel.
+
+</details>
+
 ---
 
 ## 💡 La idea
