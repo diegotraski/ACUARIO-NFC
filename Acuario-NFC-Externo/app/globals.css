@@ -54,6 +54,8 @@ button { color: inherit; }
 .fish { position: absolute; display: grid; place-items: center; width: 58px; height: 38px; inset: 61px 52px; border: 2px solid var(--aqua); border-radius: 58% 45% 45% 58%; color: var(--lime); font-size: 31px; line-height: 1; transform: rotate(-7deg); }
 .fish::before { content: ""; position: absolute; right: -19px; width: 24px; height: 25px; border: 2px solid var(--aqua); border-left: 0; transform: rotate(45deg); }
 
+.demo-banner { border-radius: 14px; padding: 12px 14px; background: #e3faf5; color: var(--deep); border: 1px solid #b5ece1; font-size: 13px; line-height: 1.45; margin-top: 14px; }
+.demo-banner strong { display: block; margin-bottom: 2px; }
 .error-banner, .inline-error { border-radius: 14px; padding: 12px 14px; background: #fff0ed; color: #a73e2d; font-size: 13px; margin-top: 14px; }
 .snapshot { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0 30px; }
 .snapshot article { min-width: 0; display: flex; align-items: center; gap: 11px; padding: 13px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255,255,255,.78); }

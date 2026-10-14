@@ -137,6 +137,37 @@ function dueLabel(timestamp: number | undefined, intervalDays: number, now: numb
   return { label: `En ${daysLeft} d`, status: daysLeft <= 3 ? "soon" : "ok" };
 }
 
+// Demo mode: used with ?demo=1 or when the database is unreachable. Events live only in
+// this browser's localStorage, seeded with a realistic week of care.
+const DEMO_STORAGE_KEY = "aquarium-demo-events";
+
+function demoSeed(now: number): AquariumEvent[] {
+  const HOUR = 60 * 60 * 1000;
+  const seed: Array<[ActionKey, number, Record<string, string>]> = [
+    ["feed", 2 * HOUR, { food: "Escamas" }],
+    ["parameters", 2 * DAY, { temperature: "24.5", ph: "7.0", no2: "0", no3: "10", gh: "8", kh: "5" }],
+    ["fertilizer", 3 * DAY, { product: "Abono líquido", amount: "2" }],
+    ["water", 5 * DAY, { percentage: "30" }],
+    ["filter1", 12 * DAY, {}],
+    ["filter2", 26 * DAY, {}],
+  ];
+  return seed.map(([action, ago, details], index) => ({ id: -(index + 1), action, details, createdAt: now - ago }));
+}
+
+function readDemoEvents(now: number) {
+  try {
+    const stored = window.localStorage.getItem(DEMO_STORAGE_KEY);
+    if (stored) return JSON.parse(stored) as AquariumEvent[];
+  } catch {}
+  return demoSeed(now);
+}
+
+function writeDemoEvents(events: AquariumEvent[]) {
+  try {
+    window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(events));
+  } catch {}
+}
+
 function latest(events: AquariumEvent[], action: ActionKey) {
   return events.find((event) => event.action === action);
 }
@@ -171,9 +202,24 @@ export default function AquariumApp() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
   const [now, setNow] = useState(0);
+  const [demo, setDemo] = useState(false);
+
+  function startDemo() {
+    const current = Date.now();
+    setDemo(true);
+    setError("");
+    setNow(current);
+    setEvents(readDemoEvents(current));
+    setLoading(false);
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    if (params.get("demo") === "1") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      startDemo();
+      return;
+    }
     const incomingTank = params.get("tank");
     const storedTank = window.localStorage.getItem("aquarium-tank-id");
     const resolvedTank = incomingTank || storedTank || randomTankId();
@@ -192,10 +238,19 @@ export default function AquariumApp() {
     setError("");
     try {
       const response = await fetch(`/api/events?tank=${encodeURIComponent(currentTank)}`);
+      // Database unreachable or not configured: fall back to the local demo instead of a broken page.
+      if (response.status >= 500) {
+        startDemo();
+        return;
+      }
       const data = (await response.json()) as { events?: AquariumEvent[]; error?: string };
       if (!response.ok) throw new Error(data.error || "No se pudo cargar el historial");
       setEvents(data.events || []);
     } catch (loadError) {
+      if (loadError instanceof TypeError) {
+        startDemo();
+        return;
+      }
       setError(loadError instanceof Error ? loadError.message : "No se pudo cargar el historial");
     } finally {
       setLoading(false);
@@ -256,6 +311,17 @@ export default function AquariumApp() {
       if (cleanValue) details[key] = cleanValue;
     });
 
+    if (demo) {
+      const created: AquariumEvent = { id: Date.now(), action: activeAction, details, createdAt: Date.now() };
+      const next = [created, ...events];
+      writeDemoEvents(next);
+      setEvents(next);
+      setNow(created.createdAt);
+      setSaving(false);
+      closeAction();
+      return;
+    }
+
     try {
       const response = await fetch("/api/events", {
         method: "POST",
@@ -295,6 +361,12 @@ export default function AquariumApp() {
 
   async function clearHistory() {
     if (!window.confirm("¿Borrar todo el historial del acuario? Esta acción no se puede deshacer.")) return;
+    if (demo) {
+      writeDemoEvents([]);
+      setEvents([]);
+      setNow(Date.now());
+      return;
+    }
     setDeleting(true);
     setError("");
     try {
@@ -339,6 +411,12 @@ export default function AquariumApp() {
         </div>
       </section>
 
+      {demo && (
+        <div className="demo-banner" role="status">
+          <strong>Modo demostración</strong>
+          Datos de ejemplo guardados solo en este navegador. Prueba a registrar cuidados: el resumen y el historial se actualizan al momento.
+        </div>
+      )}
       {error && <div className="error-banner" role="alert">{error}</div>}
 
       <section className="snapshot" aria-label="Resumen del acuario">

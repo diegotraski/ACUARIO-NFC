@@ -6,13 +6,15 @@
 
 Toca una etiqueta NFC junto al acuario y el cuidado queda registrado al momento, sin abrir ninguna app.
 
-[![Demo](https://img.shields.io/badge/Demo-acuario--nfc.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://acuario-nfc.vercel.app)
+[![Demo](https://img.shields.io/badge/Probar_la_demo-acuario--nfc.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://acuario-nfc.vercel.app/?demo=1)
 
 ![Next.js](https://img.shields.io/badge/Next.js_16-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React_19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?style=for-the-badge&logo=supabase&logoColor=white)
 ![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
+
+<img src="docs/screenshot.png" alt="Panel de Acuario NFC en el móvil" width="320">
 
 </div>
 
@@ -38,6 +40,7 @@ Llevar el control de un acuario (cuándo se alimentó a los peces, cuándo se ca
 - 💧 **Cambios de agua**, 🌿 **fertilización** y 🔧 **mantenimiento de dos filtros**, cada uno con su propia etiqueta.
 - 🧪 **Parámetros del agua** (temperatura, NO₂, NO₃…) mediante formulario rápido.
 - 📊 **Panel general**: estado de hoy, próximos cuidados e historial reciente.
+- 👀 **Modo demostración** (`?demo=1`): datos de ejemplo guardados solo en el navegador para probar la app sin cuenta ni base de datos. También se activa solo si la base de datos no está disponible.
 - 🔗 **Configuración NFC integrada**: la app genera los siete enlaces listos para grabar en las etiquetas.
 - 📱 Instalable como **PWA** en el móvil.
 
